@@ -174,6 +174,7 @@ func (cm *connectionManager) start() error {
 	}
 	cm.expireTicker = time.NewTicker(cm.idleExpirationInterval)
 	go cm.manageConnections()
+	go cm.monitorConnections()
 	cm.setState(cmRunning)
 	return nil
 }
@@ -313,6 +314,21 @@ func (cm *connectionManager) remove(conn *connection) error {
 		return conn.close()
 	}
 	return nil
+}
+
+func (cm *connectionManager) monitorConnections() {
+	if EnableDebugLogging {
+		logDebug("[connectionManager]", "connection monitoring is starting")
+		lastCount := uint16(0)
+		for {
+			count := cm.count()
+			if count != lastCount {
+				logDebug("[connectionManager]", fmt.Sprintf("current connections for %v: %d", cm.addr, count))
+			}
+			lastCount = count
+			time.Sleep(time.Millisecond * 100)
+		}
+	}
 }
 
 func (cm *connectionManager) manageConnections() {
